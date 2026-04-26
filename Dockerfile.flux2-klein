@@ -1,0 +1,37 @@
+# Custom Dockerfile for RunPod ComfyUI with FLUX.2 Klein 9b
+# This Dockerfile is based on worker-comfyui but includes:
+# - FLUX.2 Klein 9b diffusion model
+# - Qwen text encoder
+# - FLUX2 VAE
+# - Required custom nodes for the clothes swap workflow
+
+# Start from base image (use latest version check https://github.com/runpod-workers/worker-comfyui/releases)
+FROM runpod/worker-comfyui:5.8.5-base
+
+# Install custom nodes required for clothes swap workflow
+# - comfy-cg-use-everywhere: "Anything Everywhere" node
+# - rgthree-comfy: Image Comparer and other utility nodes
+# - lanpaint: LanPaint KSampler for advanced sampling
+RUN comfy-node-install comfy-cg-use-everywhere rgthree-comfy lanpaint
+
+# Download FLUX.2 Klein 9b diffusion model
+# Source: CivitAI (requires account/API for direct download)
+# Alternative: Download from HuggingFace or use Network Volume
+# RUN comfy model download --url <DIRECT_URL> --relative-path models/diffusion_models --filename flux-2-klein-9b-fp8.safetensors
+
+# Download Qwen 3 8B text encoder (FLUX.2 variant)
+RUN comfy model download \
+    --url https://huggingface.co/Comfy-Org/vae-text-encorder-for-flux-klein-9b/resolve/main/split_files/text_encoders/qwen_3_8b_fp4mixed.safetensors \
+    --relative-path models/text_encoders \
+    --filename qwen_3_8b_fp4mixed.safetensors
+
+# Download FLUX2 VAE
+RUN comfy model download \
+    --url https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors \
+    --relative-path models/vae \
+    --filename flux2-vae.safetensors
+
+# Note: For FLUX.2 Klein model (flux-2-klein-9b-fp8.safetensors), either:
+# 1. Download from CivitAI manually and add via --url with direct link
+# 2. Use a Network Volume to mount the model
+# 3. Build locally and push to your registry
